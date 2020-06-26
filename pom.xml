@@ -354,8 +354,8 @@
     <osmaven.version>1.6.2</osmaven.version>
     <!-- keep in sync with PlatformDependent#ALLOWED_LINUX_OS_CLASSIFIERS -->
     <os.detection.classifierWithLikes>fedora,suse,arch</os.detection.classifierWithLikes>
-    <tcnative.artifactId>netty-tcnative-openssl-static</tcnative.artifactId>
-    <tcnative.version>2.0.32.Final-SNAPSHOT</tcnative.version>
+    <tcnative.artifactId>netty-tcnative</tcnative.artifactId>
+    <tcnative.version>2.0.31.Final</tcnative.version>
     <tcnative.classifier>osx-x86_64</tcnative.classifier>
     <conscrypt.groupId>org.conscrypt</conscrypt.groupId>
     <conscrypt.artifactId>conscrypt-openjdk-uber</conscrypt.artifactId>
