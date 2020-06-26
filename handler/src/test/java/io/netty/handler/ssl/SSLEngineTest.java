@@ -19,7 +19,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -3023,17 +3022,13 @@ public abstract class SSLEngineTest {
     }
 
     private static int currentSessionCacheSize(SSLSessionContext ctx) {
-        try {
-            Enumeration<byte[]> ids = ctx.getIds();
-            int i = 0;
-            while (ids.hasMoreElements()) {
-                i++;
-                ids.nextElement();
-            }
-            return i;
-        } catch (NullPointerException e) {
-            throw e;
+        Enumeration<byte[]> ids = ctx.getIds();
+        int i = 0;
+        while (ids.hasMoreElements()) {
+            i++;
+            ids.nextElement();
         }
+        return i;
     }
 
     private void closeOutboundAndInbound(SSLEngine clientEngine, SSLEngine serverEngine) throws SSLException {
@@ -3717,7 +3712,7 @@ public abstract class SSLEngineTest {
             final Promise<SecretKey> promise = sb.config().group().next().newPromise();
             serverChannel = sb.childHandler(new ChannelInitializer<Channel>() {
                 @Override
-                protected void initChannel(Channel ch) throws Exception {
+                protected void initChannel(Channel ch) {
                     ch.config().setAllocator(new TestByteBufAllocator(ch.config().getAllocator(), type));
 
                     SslHandler sslHandler = delegatingExecutor == null ?
@@ -3775,7 +3770,7 @@ public abstract class SSLEngineTest {
                 new java.security.cert.X509Certificate[] { ssc.cert() }, ssc.key(), null, null, null);
     }
 
-    private final class TestTrustManagerFactory extends X509ExtendedTrustManager {
+    private static final class TestTrustManagerFactory extends X509ExtendedTrustManager {
         private final Certificate localCert;
         private volatile boolean verified;
 

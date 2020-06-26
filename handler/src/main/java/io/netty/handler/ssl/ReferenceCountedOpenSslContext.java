@@ -272,7 +272,7 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
                           // This also let SSLSession.getId() work the same way for the JDK implementation and the
                           // OpenSSLEngine. If tickets are supported SSLSession.getId() will only return an ID on the
                           // server-side if it could make use of tickets.
-                         SSL.SSL_OP_NO_TICKET;
+                           SSL.SSL_OP_NO_TICKET;
 
             if (cipherBuilder.length() == 0) {
                 // No ciphers that are compatible with SSLv2 / SSLv3 / TLSv1 / TLSv1.1 / TLSv1.2
