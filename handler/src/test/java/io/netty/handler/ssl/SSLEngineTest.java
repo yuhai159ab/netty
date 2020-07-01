@@ -1267,14 +1267,14 @@ public abstract class SSLEngineTest {
                 .trustManager(InsecureTrustManagerFactory.INSTANCE)
                 .sslProvider(sslClientProvider())
                 // This test only works for non TLSv1.3 for now
-                .protocols(PROTOCOL_TLS_V1_2)
+                .protocols(protocols())
                 .sslContextProvider(clientSslContextProvider())
                 .build());
         SelfSignedCertificate ssc = new SelfSignedCertificate();
         serverSslCtx = wrapContext(SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
                 .sslProvider(sslServerProvider())
                 // This test only works for non TLSv1.3 for now
-                .protocols(PROTOCOL_TLS_V1_2)
+                .protocols(protocols())
                 .sslContextProvider(serverSslContextProvider())
                 .build());
         SSLEngine clientEngine = null;
@@ -1292,7 +1292,9 @@ public abstract class SSLEngineTest {
             // After the handshake the id should have length > 0
             assertNotEquals(0, clientEngine.getSession().getId().length);
             assertNotEquals(0, serverEngine.getSession().getId().length);
-            assertArrayEquals(clientEngine.getSession().getId(), serverEngine.getSession().getId());
+            if (protocolCipherCombo != ProtocolCipherCombo.TLSV13) {
+                assertArrayEquals(clientEngine.getSession().getId(), serverEngine.getSession().getId());
+            }
         } finally {
             cleanupClientSslEngine(clientEngine);
             cleanupServerSslEngine(serverEngine);
@@ -2970,6 +2972,7 @@ public abstract class SSLEngineTest {
             int nCSessions = clientSessions;
             int nSSessions = serverSessions;
             if (protocolCipherCombo == ProtocolCipherCombo.TLSV13) {
+                // Allocate something which is big enough for sure
                 ByteBuffer packetBuffer = allocateBuffer(32 * 1024);
                 ByteBuffer appBuffer = allocateBuffer(32 * 1024);
 
@@ -3148,6 +3151,9 @@ public abstract class SSLEngineTest {
             doHandshakeVerifyReusedAndClose("a.netty.io", 9999, false);
             // As we have a cache size of 1 we should never have more then one session in the cache
             doHandshakeVerifyReusedAndClose("b.netty.io", 9999, false);
+
+            // We should at least reuse b.netty.io
+            doHandshakeVerifyReusedAndClose("b.netty.io", 9999, true);
         } finally {
             ssc.delete();
         }

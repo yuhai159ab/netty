@@ -15,6 +15,8 @@
  */
 package io.netty.handler.ssl;
 
+import io.netty.util.AsciiString;
+
 import javax.net.ssl.SSLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -117,19 +119,20 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
      * Host / Port tuple used to find a {@link OpenSslSession} in the cache.
      */
     private static final class HostPort {
+        private final int hash;
         private final String host;
         private final int port;
 
         HostPort(String host, int port) {
             this.host = host;
             this.port = port;
+            // Calculate a hashCode that does ignore case.
+            this.hash = 31 * AsciiString.hashCode(host) + port;
         }
 
         @Override
         public int hashCode() {
-            int result = host.hashCode();
-            result = 31 * result + port;
-            return result;
+            return hash;
         }
 
         @Override

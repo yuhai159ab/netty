@@ -1165,6 +1165,7 @@ public class SslHandlerTest {
         final byte[] bytes = new byte[96];
         PlatformDependent.threadLocalRandom().nextBytes(bytes);
         try {
+            final AtomicReference<AssertionError> assertErrorRef = new AtomicReference<AssertionError>();
             sc = new ServerBootstrap()
                     .group(group)
                     .channel(NioServerSocketChannel.class)
@@ -1188,7 +1189,12 @@ public class SslHandlerTest {
                                         // See https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_sess_set_get_cb.html
                                         if (!SslUtils.PROTOCOL_TLS_V1_3.equals(engine.getSession().getProtocol())) {
                                             // First should not re-use the session
-                                            assertEquals(handshakeCount > 1, engine.isSessionReused());
+                                            try {
+                                                assertEquals(handshakeCount > 1, engine.isSessionReused());
+                                            } catch (AssertionError error) {
+                                                assertErrorRef.set(error);
+                                                return;
+                                            }
                                         }
 
                                         ctx.writeAndFlush(Unpooled.wrappedBuffer(bytes));
@@ -1202,6 +1208,10 @@ public class SslHandlerTest {
             InetSocketAddress serverAddr = (InetSocketAddress) sc.localAddress();
             testSessionTickets(serverAddr, group, sslClientCtx, bytes, false);
             testSessionTickets(serverAddr, group, sslClientCtx, bytes, true);
+            AssertionError error = assertErrorRef.get();
+            if (error != null) {
+                throw error;
+            }
         } finally {
             if (sc != null) {
                 sc.close().syncUninterruptibly();
