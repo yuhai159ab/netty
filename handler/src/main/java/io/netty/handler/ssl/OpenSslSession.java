@@ -43,7 +43,8 @@ interface OpenSslSession extends SSLSession, ReferenceCounted {
     long nativeAddr();
 
     /**
-     * Set the local certificate chain that is used.
+     * Set the local certificate chain that is used. It is not expected that this array will be changed at all
+     * and so its ok to not copy the array.
      */
     void setLocalCertificate(Certificate[] localCertificate);
 

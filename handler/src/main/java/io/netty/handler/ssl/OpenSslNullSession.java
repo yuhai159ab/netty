@@ -32,6 +32,7 @@ final class OpenSslNullSession implements OpenSslSession {
     private final Certificate[] localCertificate;
     private final OpenSslSessionId sessionId = new OpenSslSessionId(EmptyArrays.EMPTY_BYTES);
 
+    // The given array will never be mutated and so its ok to not clone it.
     OpenSslNullSession(OpenSslSessionContext sessionContext, Certificate[] localCertificate) {
         this.sessionContext = sessionContext;
         this.localCertificate = localCertificate;

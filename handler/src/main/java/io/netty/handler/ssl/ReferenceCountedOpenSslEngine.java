@@ -264,6 +264,11 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
                     SSL.setMode(ssl, SSL.getMode(ssl) | SSL.SSL_MODE_ENABLE_PARTIAL_WRITE);
                 }
 
+                int opts = SSL.getOptions(ssl);
+                if (isProtocolEnabled(opts, SSL.SSL_OP_NO_TLSv1_3, PROTOCOL_TLS_V1_3)) {
+                    // We always support tickets by default when TLSv1.3 is used
+                    SSL.clearOptions(ssl, SSL.SSL_OP_NO_TICKET);
+                }
                 // setMode may impact the overhead.
                 calculateMaxWrapOverhead();
             } catch (Throwable cause) {
@@ -1647,6 +1652,11 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
 
                 // Disable protocols we do not want
                 SSL.setOptions(ssl, opts);
+
+                if (isProtocolEnabled(opts, SSL.SSL_OP_NO_TLSv1_3, PROTOCOL_TLS_V1_3)) {
+                    // We always support tickets by default when TLSv1.3 is used
+                    SSL.clearOptions(ssl, SSL.SSL_OP_NO_TICKET);
+                }
             } else {
                 throw new IllegalStateException("failed to enable protocols: " + Arrays.asList(protocols));
             }
