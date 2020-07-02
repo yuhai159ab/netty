@@ -153,7 +153,7 @@ public class ConscryptOpenSslEngineInteropTest extends ConscryptSslEngineTest {
 
     @Ignore("Ignore for now as Conscrypt seems to behave different then expected")
     @Override
-    public void testSessionCacheForTLS12() {
+    public void testSessionCache() {
         // Skip
     }
 

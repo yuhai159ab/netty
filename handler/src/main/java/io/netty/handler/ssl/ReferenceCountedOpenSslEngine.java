@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -1473,7 +1474,7 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
         if (enabled == null) {
             return EmptyArrays.EMPTY_STRINGS;
         } else {
-            List<String> enabledList = new ArrayList<String>();
+            Set<String> enabledSet = new HashSet<String>();
             synchronized (this) {
                 for (int i = 0; i < enabled.length; i++) {
                     String mapped = toJavaCipherSuite(enabled[i]);
@@ -1481,10 +1482,19 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
                     if (!OpenSsl.isTlsv13Supported() && SslUtils.isTLSv13Cipher(cipher)) {
                         continue;
                     }
-                    enabledList.add(cipher);
+                    enabledSet.add(cipher);
                 }
             }
-            return enabledList.toArray(new String[0]);
+            if (OpenSsl.isBoringSSL()) {
+                String[] enabledProtocols = getEnabledProtocols();
+                for (int i = 0; i < enabledProtocols.length; i++) {
+                    if (SslUtils.PROTOCOL_TLS_V1_3.equals(enabledProtocols[i])) {
+                        Collections.addAll(enabledSet, OpenSsl.EXTRA_SUPPORTED_TLS_1_3_CIPHERS);
+                        break;
+                    }
+                }
+            }
+            return enabledSet.toArray(new String[0]);
         }
     }
 

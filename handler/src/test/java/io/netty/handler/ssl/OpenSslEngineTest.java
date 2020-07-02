@@ -1354,8 +1354,8 @@ public class OpenSslEngineTest extends SSLEngineTest {
 
     @Test
     @Override
-    public void testSessionCacheForTLS12() throws Exception {
-        super.testSessionCacheForTLS12();
+    public void testSessionCache() throws Exception {
+        super.testSessionCache();
         assertSessionContext(clientSslCtx);
         assertSessionContext(serverSslCtx);
     }
@@ -1376,6 +1376,11 @@ public class OpenSslEngineTest extends SSLEngineTest {
     @Override
     protected void assertSessionReusedForEngine(SSLEngine clientEngine, SSLEngine serverEngine, boolean reuse) {
         assertEquals(reuse, unwrapEngine(clientEngine).isSessionReused());
-        //assertEquals(reuse, unwrapEngine(serverEngine).isSessionReused());
+        assertEquals(reuse, unwrapEngine(serverEngine).isSessionReused());
+    }
+
+    @Override
+    protected boolean isSessionMaybeReused(SSLEngine engine) {
+        return unwrapEngine(engine).isSessionReused();
     }
 }

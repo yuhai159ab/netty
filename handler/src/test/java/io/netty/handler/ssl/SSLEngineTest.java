@@ -1289,10 +1289,52 @@ public abstract class SSLEngineTest {
 
             handshake(clientEngine, serverEngine);
 
-            // After the handshake the id should have length > 0
-            assertNotEquals(0, clientEngine.getSession().getId().length);
-            assertNotEquals(0, serverEngine.getSession().getId().length);
-            if (protocolCipherCombo != ProtocolCipherCombo.TLSV13) {
+            if (protocolCipherCombo == ProtocolCipherCombo.TLSV13) {
+                // Allocate something which is big enough for sure
+                ByteBuffer packetBuffer = allocateBuffer(32 * 1024);
+                ByteBuffer appBuffer = allocateBuffer(32 * 1024);
+
+                appBuffer.clear().position(4).flip();
+                packetBuffer.clear();
+
+                do {
+                    SSLEngineResult result;
+
+                    do {
+                        result = serverEngine.wrap(appBuffer, packetBuffer);
+                    } while (appBuffer.hasRemaining() || result.bytesProduced() > 0);
+
+                    appBuffer.clear();
+                    packetBuffer.flip();
+                    do {
+                        result = clientEngine.unwrap(packetBuffer, appBuffer);
+                    } while (packetBuffer.hasRemaining() || result.bytesProduced() > 0);
+
+                    packetBuffer.clear();
+                    appBuffer.clear().position(4).flip();
+
+                    do {
+                        result = clientEngine.wrap(appBuffer, packetBuffer);
+                    } while (appBuffer.hasRemaining() || result.bytesProduced() > 0);
+
+                    appBuffer.clear();
+                    packetBuffer.flip();
+
+                    do {
+                        result = serverEngine.unwrap(packetBuffer, appBuffer);
+                    } while (packetBuffer.hasRemaining() || result.bytesProduced() > 0);
+
+                    packetBuffer.clear();
+                    appBuffer.clear().position(4).flip();
+                } while (clientEngine.getSession().getId().length == 0);
+
+                // With TLS1.3 we should see pseudo IDs and so these should never match.
+                assertFalse(Arrays.equals(clientEngine.getSession().getId(), serverEngine.getSession().getId()));
+            } else {
+                // After the handshake the id should have length > 0
+                assertNotEquals(0, clientEngine.getSession().getId().length);
+                assertNotEquals(0, serverEngine.getSession().getId().length);
+
                 assertArrayEquals(clientEngine.getSession().getId(), serverEngine.getSession().getId());
             }
         } finally {
@@ -2903,12 +2945,7 @@ public abstract class SSLEngineTest {
     }
 
     @Test
-    public void testSessionCacheForTLS12() throws Exception {
-        // This test only works for TLSv1.2 as TLSv1.3 will establish sessions after the handshake is done.
-        // See https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_sess_set_get_cb.html
-        if (protocolCipherCombo != ProtocolCipherCombo.TLSV12) {
-            return;
-        }
+    public void testSessionCache() throws Exception {
         clientSslCtx = wrapContext(SslContextBuilder.forClient()
                 .trustManager(InsecureTrustManagerFactory.INSTANCE)
                 .sslProvider(sslClientProvider())
@@ -2940,9 +2977,11 @@ public abstract class SSLEngineTest {
         while (ids.hasMoreElements()) {
             byte[] id = ids.nextElement();
             SSLSession session = context.getSession(id);
-            session.invalidate();
-            assertFalse(session.isValid());
-            assertNull(context.getSession(id));
+            if (session != null) {
+                session.invalidate();
+                assertFalse(session.isValid());
+                assertNull(context.getSession(id));
+            }
         }
     }
 
@@ -3010,9 +3049,10 @@ public abstract class SSLEngineTest {
                     appBuffer.clear().position(4).flip();
                     nCSessions = currentSessionCacheSize(clientSslCtx.sessionContext());
                     nSSessions = currentSessionCacheSize(serverSslCtx.sessionContext());
-                } while (!reuse && (nCSessions < clientSessions ||
+                } while ((reuse && (!isSessionMaybeReused(clientEngine) || !isSessionMaybeReused(serverEngine)))
+                        || (!reuse && (nCSessions < clientSessions ||
                         // server may use multiple sessions
-                        nSSessions < serverSessions));
+                        nSSessions < serverSessions)));
             }
 
             assertSessionReusedForEngine(clientEngine, serverEngine, reuse);
@@ -3022,6 +3062,10 @@ public abstract class SSLEngineTest {
             cleanupClientSslEngine(clientEngine);
             cleanupServerSslEngine(serverEngine);
         }
+    }
+
+    protected boolean isSessionMaybeReused(SSLEngine engine) {
+        return true;
     }
 
     private static int currentSessionCacheSize(SSLSessionContext ctx) {
